@@ -1,6 +1,7 @@
 import boto3
 import time
 import os
+import json
 from typing import Optional
 
 
@@ -132,12 +133,12 @@ def handler(event, context):
         )
 
         return {
-            'ProcessingJobName': job_name
+            'ProcessingJobName': "test"
         }
     except Exception as error: 
-        print("estou aqui")
-        return error
+        error_message = str(error)  
+        return {
+            "code": 400, 
+            "body": error_message
+        }
 
-if __name__ == "__main__":
-    data = handler("", "")
-    print(data)
