@@ -1,5 +1,6 @@
 import boto3
 import time
+import os
 from typing import Optional
 
 
@@ -25,44 +26,47 @@ def get_file_input(name: str, input_s3_uri: str, output_path: str):
         }
     }
 
-# def get_file_output(name: str, local_path: str, ouput_s3_uri: str):
-#     """ Returns output file configuration
-#         Modify for different output method """
-#     return {
-#         'OutputName': name,
-#         'S3Output': {
-#             'S3Uri': ouput_s3_uri,
-#             'LocalPath': local_path,
-#             'S3UploadMode': 'EndOfJob'
-#         }
-#     }
+def get_file_output(name: str, local_path: str, ouput_s3_uri: str):
+    """ Returns output file configuration
+        Modify for different output method """
+    return {
+        'OutputName': name,
+        'S3Output': {
+            'S3Uri': ouput_s3_uri,
+            'LocalPath': local_path,
+            'S3UploadMode': 'EndOfJob'
+        }
+    }
 
 
-def get_app_spec(image_uri: str, container_arguments: Optional[str], entrypoint: Optional[str]):
+def get_app_spec(image_uri: str):
     try:
         app_spec = {
-            'ImageUri': image_uri,
-            'ContainerArguments': None 
+            'ImageUri': image_uri
         }
-        
-        if container_arguments is not None:
-            # Adicione os argumentos à lista
-            app_spec['ContainerArguments'] = container_arguments.split()  # Divida a string em uma lista de argumentos
-
-        if entrypoint is not None:
-            app_spec['ContainerEntrypoint'] = ['python', entrypoint]
-
         return app_spec
     except Exception as error:
-        print(error)
-
+        return error
+def network_config():
+    return {
+        'EnableInterContainerTrafficEncryption': False,
+        'EnableNetworkIsolation': False,
+        'VpcConfig': {
+            'SecurityGroupIds': [
+                'sg-06f74ac6548811ac0',
+            ],
+            'Subnets': [
+                'subnet-019175a35d985b497',
+            ]
+        }
+    }
 def handler(event, context):
     try:
         # (1) Get inputs
-        # input_uri = event['S3Input']
-        # ouput_uri = event['S3Output']
+        # input_uri = ''
+        # ouput_uri = ''
         image_uri = "200425339804.dkr.ecr.us-east-1.amazonaws.com/processing-script:latest"
-        # script_uri = event.get('S3Script', None)  # Optional: S3 path to custom script
+        script_uri = None  # Optional: S3 path to custom script
 
         # Get execution environment
         role = "arn:aws:iam::200425339804:role/dev-aiidea-llc-sagemaker-role"
@@ -98,7 +102,7 @@ def handler(event, context):
         # Define execution environment
         #
 
-        app_spec = get_app_spec(image_uri, 'python', 'python')
+        app_spec = get_app_spec(image_uri)
 
         cluster_config = {
             'InstanceCount': 1,
@@ -106,6 +110,7 @@ def handler(event, context):
             'VolumeSizeInGB': volume_size
         }
 
+        network = network_config()
         #
         # (4) Create processing job and return job ARN
         #
@@ -121,6 +126,7 @@ def handler(event, context):
             StoppingCondition={
                 'MaxRuntimeInSeconds': max_runtime
             },
+            NetworkConfig=network,
             AppSpecification=app_spec,
             RoleArn=role
         )
@@ -129,5 +135,9 @@ def handler(event, context):
             'ProcessingJobName': job_name
         }
     except Exception as error: 
+        print("estou aqui")
         return error
 
+if __name__ == "__main__":
+    data = handler("", "")
+    print(data)
