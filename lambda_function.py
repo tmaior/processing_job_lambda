@@ -133,7 +133,7 @@ def handler(event, context):
         )
 
         return {
-            'ProcessingJobName': "test"
+            'ProcessingJobName': job_name
         }
     except Exception as error: 
         error_message = str(error)  
